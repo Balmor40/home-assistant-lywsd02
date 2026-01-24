@@ -1,9 +1,11 @@
-# Home Assistant - LYWSD02 Sync
+# Home Assistant - LYWSD02 Sync Balmor
 
 ## Overview
 
 This integration allows to configure LYWSD02 e-Ink clocks via HomeAssistant bluetooth integration.
 This means that you can leverage all your ESPHome Bluetooth proxies for best coverage.
+
+From https://github.com/ashald/home-assistant-lywsd02
 
 See [./info.md](./info.md) for usage details.
 
@@ -17,7 +19,7 @@ You can use HACS to manage the installation and provide update notifications.
 1. Add this repo as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories/):
 
 ```text
-https://github.com/ashald/home-assistant-lywsd02
+https://github.com/Balmor40/home-assistant-lywsd02
 ```
 
 2. Install the integration using the appropriate button on the HACS Integrations page. Search for "home-assistant-lywsd02".
