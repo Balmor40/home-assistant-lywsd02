@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.components import bluetooth
 
-DOMAIN = "lywsd02"
+DOMAIN = "lywsd02Balmor"
 
 _LOGGER = logging.getLogger(__name__)
 
