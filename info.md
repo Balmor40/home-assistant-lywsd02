@@ -1,4 +1,4 @@
-# LYWSD02 Sync
+# LYWSD02 Sync2
 
 Once installed, you need to add following to HomeAssistant's `configuration.yaml` and restart it:
 ```yaml
