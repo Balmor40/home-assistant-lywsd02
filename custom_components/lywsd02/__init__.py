@@ -16,19 +16,19 @@ _LOGGER = logging.getLogger(__name__)
 
 _UUID_TIME = 'EBE0CCB7-7A0A-4B0C-8A1A-6FF2997DA3A6'
 _UUID_TEMO = 'EBE0CCBE-7A0A-4B0C-8A1A-6FF2997DA3A6'
-
+"""
 def get_localized_timestamp():
-    """
-    Récupère le timestamp actuel et y ajoute le décalage du fuseau horaire local.
-    Cela permet d'envoyer 'l'heure locale' à l'appareil qui s'attend à un timestamp brut.
-    """
+    
+    #Récupère le timestamp actuel et y ajoute le décalage du fuseau horaire local.
+    #Cela permet d'envoyer 'l'heure locale' à l'appareil qui s'attend à un timestamp brut.
+    
     # Récupère l'heure actuelle avec les infos de fuseau horaire du système
     now = datetime.now().astimezone()
     # Récupère le décalage (offset) en secondes
     offset = now.utcoffset().total_seconds()
     # Retourne le timestamp UTC + le décalage
     return int(now.timestamp() + offset)
-
+"""
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """
     Based off https://github.com/h4/lywsd02
