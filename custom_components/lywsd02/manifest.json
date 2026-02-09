@@ -2,10 +2,10 @@
     "domain": "lywsd02",
     "name": "LYWSD02 Sync Balmor",
     "codeowners": [
-        "ashald"
+        "balmor40"
     ],
     "dependencies": [],
-    "documentation": "https://github.com/ashald/home-assistant-lywsd02",
+    "documentation": "https://github.com/Balmor40/home-assistant-lywsd02",
     "iot_class": "local_polling",
     "requirements": [
         "bluetooth_adapters"
