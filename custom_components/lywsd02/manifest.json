@@ -4,11 +4,14 @@
     "codeowners": [
         "balmor40"
     ],
-    "dependencies": [],
+    "dependencies": [
+        "bluetooth"
+    ],
     "documentation": "https://github.com/Balmor40/home-assistant-lywsd02",
     "iot_class": "local_polling",
     "requirements": [
-        "bluetooth_adapters"
+        "bluetooth_adapters",
+        "bleak-retry-connector>=3.0.0"
     ],
-    "version": "0.2.1"
+    "version": "0.3.2"
 }

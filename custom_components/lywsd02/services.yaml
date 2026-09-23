@@ -15,11 +15,13 @@ set_time:
       description: C = Celsius, F = Fahrenheit
       example: "C"
     clock_mode:
-      description: 12 or 24 hour operation
+      description: >-
+        12 or 24 hour operation. Only supported on the LYWSD02MMC; the plain
+        LYWSD02 rejects it (a warning is logged and the time is still set).
       example: 12
     display:
       description: 4 digits HHMM to show instead of the current time (HH 00-23, MM 00-59). Always quote the value. The clock keeps counting from there until the next sync.
       example: "1234"
     timeout:
-      description: How long to wait for connection with LYWSD02 - increase if update is failing
-      example: 10
+      description: How long to wait for connection with LYWSD02, in seconds (default 60) - increase if update is failing
+      example: 120

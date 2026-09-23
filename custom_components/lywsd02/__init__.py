@@ -4,9 +4,10 @@ import logging
 import struct
 from datetime import datetime
 
-from bleak import BleakClient
+from bleak.exc import BleakError
+from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
-from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.components import bluetooth
 
@@ -18,10 +19,10 @@ _UUID_TIME = 'EBE0CCB7-7A0A-4B0C-8A1A-6FF2997DA3A6'
 _UUID_TEMO = 'EBE0CCBE-7A0A-4B0C-8A1A-6FF2997DA3A6'
 
 def get_localized_timestamp():
-    
+
     #Récupère le timestamp actuel et y ajoute le décalage du fuseau horaire local.
     #Cela permet d'envoyer 'l'heure locale' à l'appareil qui s'attend à un timestamp brut.
-    
+
     # Récupère l'heure actuelle avec les infos de fuseau horaire du système
     now = datetime.now().astimezone()
     # Récupère le décalage (offset) en secondes
@@ -56,8 +57,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """
     Based off https://github.com/h4/lywsd02
     """
-    
-    @callback
+
     async def set_time(call: ServiceCall) -> None:
         mac = call.data['mac'].upper()
         if not mac:
@@ -93,7 +93,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
         temo_set = False
         ckmo_set = False
-        
+
         # Gestion de l'unité de température (C/F)
         temo = call.data.get('temp_mode', '') or "x"
         temo = temo.upper()
@@ -108,7 +108,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         # Gestion du mode 12h/24h
         ckmo = call.data.get('clock_mode', 0)
         _LOGGER.debug(f"ckmo var: {ckmo}")
-        
+
         data_clock_mode = None
         if ckmo in [12, 24]:
             # 0xaa pour 12h, 0x00 pour 24h (selon la logique originale)
@@ -117,8 +117,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             ckmo_set = True
 
         tout = int(call.data.get('timeout', 60))
-        
-        async with BleakClient(ble_device, timeout=tout) as client:
+
+        # A plain BleakClient regularly fails on the first attempt when the
+        # device is reached through an ESPHome/Shelly Bluetooth proxy rather
+        # than a local adapter. establish_connection retries and handles the
+        # proxy's connection slots; `timeout` is forwarded to the client.
+        client = await establish_connection(
+            BleakClientWithServiceCache,
+            ble_device,
+            mac,
+            timeout=tout,
+        )
+        try:
             if display_hm is not None:
                 # Le décalage horaire est ignoré pour afficher exactement les chiffres demandés
                 timestamp = get_display_timestamp(*display_hm)
@@ -131,14 +141,33 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             # Envoi de l'heure
             data = struct.pack('Ib', timestamp, tz_offset)
             await client.write_gatt_char(_UUID_TIME, data)
-            
+
             # Envoi du mode Température si demandé
             if temo_set and data_temp_mode:
                 await client.write_gatt_char(_UUID_TEMO, data_temp_mode)
-            
+
             # Envoi du mode Horloge si demandé (note: utilise le même UUID que l'heure sur ce device)
             if ckmo_set and data_clock_mode:
-                await client.write_gatt_char(_UUID_TIME, data_clock_mode)
+                # 12/24-hour switching writes a 7-byte clock-format value to the
+                # time characteristic. This is validated against a Mi Home app
+                # capture on the LYWSD02MMC (0xAA => 12h, 0x00 => 24h, see #10),
+                # but on the plain LYWSD02 the same characteristic is a fixed
+                # 5-byte time attribute and rejects it with "Invalid attribute
+                # length". Treat a rejection as "unsupported on this model" and
+                # warn rather than failing the call - the time is already set.
+                try:
+                    await client.write_gatt_char(_UUID_TIME, data_clock_mode)
+                except BleakError as err:
+                    _LOGGER.warning(
+                        "clock_mode (12/24-hour) could not be set on '%s': it is "
+                        "only supported on the LYWSD02MMC and this device "
+                        "rejected the write (%s). The time was set successfully "
+                        "- remove the 'clock_mode' parameter to silence this "
+                        "warning.",
+                        mac, err,
+                    )
+        finally:
+            await client.disconnect()
 
         if display_hm is not None:
             _LOGGER.info(f"Done - '{mac}' now displays '{display_hm[0]:02d}:{display_hm[1]:02d}'.")

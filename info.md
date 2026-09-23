@@ -1,4 +1,4 @@
-# LYWSD02 Sync2
+# LYWSD02 Sync Balmor
 
 Once installed, you need to add following to HomeAssistant's `configuration.yaml` and restart it:
 ```yaml
@@ -24,7 +24,7 @@ See [./services.yaml](./custom_components/lywsd02/services.yaml) for details.
 
 ## Setting Unit
 
-You can also set tempaerature unit (F/C), TZ offset, as well as clock mode (12/24) via optional parameters:
+You can also set the temperature unit (F/C), TZ offset, and clock mode (12/24) via optional parameters:
 ```yaml
 service: lywsd02.set_time
 data:
@@ -33,6 +33,11 @@ data:
   tz_offset: 0
   temp_mode: 'C'
 ```
+
+> **Note:** `clock_mode` (12/24-hour) is only supported on the **LYWSD02MMC**.
+> The payload is validated against a Mi Home app capture, but on the plain
+> LYWSD02 the time characteristic is fixed-length and rejects it — in that case
+> a warning is logged and the time is still set (see #10).
 
 ## Displaying Custom Digits
 
@@ -53,10 +58,10 @@ Limitations, as the LYWSD02 can only display a time it computes itself:
 
 ## Timeout
 
-If you get an error establishing connection - could be because it takes longer than expected to get the Bluetooth proxy working. Consider increasing `timeout` from default 10s to a larger value:
+If you get an error establishing connection - could be because it takes longer than expected to get the Bluetooth proxy working. Consider increasing `timeout` from default 60s to a larger value:
 ```yaml
 service: lywsd02.set_time
 data:
   mac: A1:B2:C3:D4:E5:F6
-  timeout: 60
+  timeout: 120
 ```
