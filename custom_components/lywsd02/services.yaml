@@ -17,6 +17,9 @@ set_time:
     clock_mode:
       description: 12 or 24 hour operation
       example: 12
+    display:
+      description: 4 digits HHMM to show instead of the current time (HH 00-23, MM 00-59). Always quote the value. The clock keeps counting from there until the next sync.
+      example: "1234"
     timeout:
       description: How long to wait for connection with LYWSD02 - increase if update is failing
       example: 10
