@@ -29,6 +29,29 @@ def get_localized_timestamp():
     # Retourne le timestamp UTC + le décalage
     return int(now.timestamp() + offset)
 
+def parse_display(value) -> tuple[int, int] | None:
+
+    #Convertit la valeur 'display' ("0930", "09:30" ou 930) en (heures, minutes).
+    #L'horloge ne sait afficher qu'une heure : HH doit être entre 00 et 23, MM entre 00 et 59.
+
+    digits = str(value).strip().replace(':', '')
+    if not digits.isdecimal() or len(digits) > 4:
+        return None
+    # Complète à 4 chiffres (YAML peut transformer "0930" en nombre 930)
+    digits = digits.zfill(4)
+    hours, minutes = int(digits[:2]), int(digits[2:])
+    if hours > 23 or minutes > 59:
+        return None
+    return hours, minutes
+
+def get_display_timestamp(hours: int, minutes: int) -> int:
+
+    #Timestamp du jour courant à HH:MM:00, pour que l'horloge affiche "HHMM".
+    #Les secondes à 0 laissent la valeur affichée une minute complète avant qu'elle n'avance.
+
+    now = get_localized_timestamp()
+    return now - now % 86400 + hours * 3600 + minutes * 60
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """
     Based off https://github.com/h4/lywsd02
@@ -42,6 +65,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             return
 
         tz_offset = call.data.get('tz_offset', 0)
+
+        # Affichage de 4 chiffres au choix à la place de l'heure réelle
+        display = call.data.get('display')
+        display_hm = None
+        if display not in (None, ''):
+            display_hm = parse_display(display)
+            if display_hm is None:
+                _LOGGER.error(
+                    f"Invalid 'display' value '{display}': expected 4 digits HHMM "
+                    f"with HH between 00 and 23 and MM between 00 and 59."
+                )
+                return
 
         # Utilisation de la méthode native de HA pour trouver le device Bluetooth
         ble_device = bluetooth.async_ble_device_from_address(
@@ -84,9 +119,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         tout = int(call.data.get('timeout', 60))
         
         async with BleakClient(ble_device, timeout=tout) as client:
-            timestamp = int(
-                call.data.get('timestamp') or get_localized_timestamp()
-            )
+            if display_hm is not None:
+                # Le décalage horaire est ignoré pour afficher exactement les chiffres demandés
+                timestamp = get_display_timestamp(*display_hm)
+                tz_offset = 0
+            else:
+                timestamp = int(
+                    call.data.get('timestamp') or get_localized_timestamp()
+                )
 
             # Envoi de l'heure
             data = struct.pack('Ib', timestamp, tz_offset)
@@ -100,7 +140,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if ckmo_set and data_clock_mode:
                 await client.write_gatt_char(_UUID_TIME, data_clock_mode)
 
-        _LOGGER.info(f"Done - refreshed time on '{mac}' to '{timestamp}' with offset of '{tz_offset}' hours.")
+        if display_hm is not None:
+            _LOGGER.info(f"Done - '{mac}' now displays '{display_hm[0]:02d}:{display_hm[1]:02d}'.")
+        else:
+            _LOGGER.info(f"Done - refreshed time on '{mac}' to '{timestamp}' with offset of '{tz_offset}' hours.")
 
     hass.services.async_register(DOMAIN, 'set_time', set_time)
 
