@@ -26,7 +26,8 @@ def get_localized_timestamp():
     # Récupère l'heure actuelle avec les infos de fuseau horaire du système
     now = datetime.now().astimezone()
     # Récupère le décalage (offset) en secondes
-    offset = now.utcoffset().total_seconds()
+    # (utcoffset() ne renvoie jamais None après astimezone(), le "or" rassure Pylance)
+    offset = (now.utcoffset() or timedelta(0)).total_seconds()
     # Retourne le timestamp UTC + le décalage
     return int(now.timestamp() + offset)
 
