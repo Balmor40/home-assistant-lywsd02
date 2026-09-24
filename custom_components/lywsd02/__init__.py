@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import struct
 from datetime import datetime
-
+from datetime import timedelta
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
